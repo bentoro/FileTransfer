@@ -38,7 +38,8 @@ public class clt {
 
 		// Read commands from client
 		input = new BufferedReader(new InputStreamReader(System.in));
-		// Store input to string
+    command();
+    // Store input to string
 		msg = input.readLine();
 		in = new DataInputStream(ClientSocket.getInputStream());
 
@@ -50,17 +51,21 @@ public class clt {
 		ops = ClientSocket.getOutputStream();
 		outs = new DataOutputStream(ops);
 		// if GET command is used
-		// while (msg.toLowerCase().contains("exit") != true){
+		while (msg.toLowerCase().contains("exit") != true){
 		if (cmd[0].equalsIgnoreCase("GET")) {
 			GET();
-			// msg = GET();
+			//msg = null;
 
 		} else if (cmd[0].equalsIgnoreCase("SEND")) {
 			SEND();
-			msg = null;
+			//msg = null;
 
 		}
-		// }
+    command();
+    msg = input.readLine();
+    out.writeUTF(msg);
+		}
+    System.out.println("disconnecting");
 		// disconnect();
 	}
 
@@ -131,10 +136,10 @@ public class clt {
 
 	}
   public static void command(){
-    System.out.println("Error : java jclient <host> <port>");
-    System.out.println("");
-    System.out.println("");
-
+    System.out.println("get <filename.extension> - Retreive a file from the server");
+    System.out.println("send <filename.extension> - Send a file to the server");
+    System.out.println("exit - close the connection");
+    System.out.println("Please enter a command: ");
   }
 	public static void disconnect() throws IOException {
 		System.out.println("Disconnecting");
