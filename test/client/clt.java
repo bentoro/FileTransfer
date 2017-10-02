@@ -34,7 +34,7 @@ public class clt {
 
     //send servername for data socket to connect to
     out.writeUTF(server);
-		dataSocketStart(dataport);
+		//dataSocketStart(dataport);
 
 		// Read commands from client
 		input = new BufferedReader(new InputStreamReader(System.in));

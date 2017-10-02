@@ -1,3 +1,25 @@
+/*-------------------------------------------------------------
+|    SOURCE FILE:     client.java
+|
+|    DATE:             Oct 1, 2017
+|
+|    DESIGNER:        Benedict Lo
+|
+|    PROGRAMMER:        Benedict Lo
+|
+|    NOTES:
+|        This program acts as a client in a client - server
+|        relationship. This client connects to 2 message queues.
+|        Once connected then it will prompt the user for a
+|        file path. The client will send the file path request
+|        to the server. If the file doesn't exist the server
+|        will echo that back. If the file does exist then the
+|        server will send the contents of the file through
+|        a message queue in which then the client will read
+|        the mesasge queue and will echo the contents to screen
+|
+--------------------------------------------------------------*/
+
 import java.io.*;
 import java.net.*;
 
@@ -5,7 +27,7 @@ public class clt {
   private static Socket client;
 	private static ServerSocket ListeningSocket;
 	private static Socket ClientSocket;
-	private static DataInputStream cmdIn;
+	private static DataInputStream dataIn;
 	private static DataOutputStream cmdOut;
 	private static DataOutputStream dataOut;
 	private static BufferedReader input;
@@ -13,88 +35,103 @@ public class clt {
 	private static FileInputStream fileIn;
 	private static String[] cmd;
 	private static String msg;
+  private static String server;
+  private static int svrport;
+  private static int dataport;
+  private static String cltip;
 
 	public static void main(String args[]) throws UnknownHostException, IOException {
 		if (args.length != 3) {
 			System.out.println("Error : java client <host> <port> <data socekt port>");
 			System.exit(0);
 		}
-		String server = args[0];
-		int svrport = Integer.parseInt(args[1]);
-		int dataport = Integer.parseInt(args[2]);
+		server = args[0];
+		svrport = Integer.parseInt(args[1]);
+		dataport = Integer.parseInt(args[2]);
 
+    //connect to command socket
 		cmdSocketStart(server, svrport);
 		cmdOut = new DataOutputStream(client.getOutputStream());
-		// Send command to server
 
-		// send servername for data socket to connect to
-		cmdOut.writeUTF(server);
-		dataSocketStart(dataport);
-
+		//send IP of client to server in the command socket
+		//cmdOut.writeUTF(cltip);
 		// Read commands from client
 		input = new BufferedReader(new InputStreamReader(System.in));
 		command();
-		// Store input to string
+		//Store user input to string
 		msg = input.readLine();
-		cmdIn = new DataInputStream(ClientSocket.getInputStream());
-
+    //parse the command from input and send user input to server
 		parseFileName();
-
 		cmdOut.writeUTF(msg);
 
-		dataOut = new DataOutputStream(ClientSocket.getOutputStream());
-		// if GET command is used
-		while (msg.toLowerCase().contains("exit") != true) {
-			if (msg.toLowerCase().contains("get")) {
-				System.out.println("GET FUNCTION CALLED");
-				GET();
-				// msg = null;
+		// if command is not exit
+    if (!msg.toLowerCase().contains("exit")){
+      System.out.println("hi");
+      //start data transfer socket
+      dataSocketStart(dataport);
+      //while command is not exit
+      while (msg.toLowerCase().contains("exit") != true) {
+        if (msg.toLowerCase().contains("get")) {
+          GET();
 
-			} else if (msg.toLowerCase().contains("send")) {
-				System.out.println("SEND FUNCTION CALLED");
-				SEND();
-				// msg = null;
-
-			}
-			command();
-			msg = input.readLine();
-			cmdOut.writeUTF(msg);
-			parseFileName();
-		}
-		System.out.println("disconnecting");
-		// disconnect();
-	}
+        } else if (msg.toLowerCase().contains("send")) {
+          SEND();
+        }
+        //output commands
+        command();
+        msg = input.readLine();
+        //send user input to server and parse input for next command
+        cmdOut.writeUTF(msg);
+        parseFileName();
+      }
+      //diconnect to client
+       disconnect(0);
+    } else {
+      disconnect(1);
+    }
+}
 
 	public static void cmdSocketStart(String host, int port) throws UnknownHostException, IOException {
+    System.out.println("------------------------------------------------------");
 		// creates a socket connecting to the server
 		client = new Socket(host, port);
-		System.out.println("Connected to " + host + " and port " + port);
+		System.out.println("Connected to " + host + " on port " + port);
 	}
 
 	public static void dataSocketStart(int port) throws IOException {
-		// second socket
+    System.out.println("------------------------------------------------------");
+		//creating listening socket
 		ListeningSocket = new ServerSocket(port);
-		System.out.println("waiting for connection on port " + port);
+		System.out.println("connecting to port  " + port);
+    //accepts connection from socket
 		ClientSocket = ListeningSocket.accept();
-		System.out.println("CONNECTED");
+    System.out.println("Client is connected on port "+ port);
 	}
 
 	public static void GET() throws IOException {
-		// creates a server socket
+    System.out.println("------------------------------------------------------");
+    System.out.println("-                 CLIENT HAS CALLED GET                     -");
+    System.out.println("------------------------------------------------------");
+		dataIn = new DataInputStream(ClientSocket.getInputStream());
 
-		// if file exists
-		msg = cmdIn.readUTF();
+		//store message from server
+		msg = dataIn.readUTF();
+    //if the file exists
 		if (msg.matches("0")) {
-			System.out.println("File Doesn't Exist");
+			System.out.println("File: "+cmd[1] +" Doesn't Exist");
 		} else {
 			try {
-				System.out.println("File is transfering");
+				System.out.println("File:"+cmd[1] + " is transfering to Client(" + cltip +")");
+        //create new file in stream
 				fileOut = new FileOutputStream(cmd[1]);
-				// size of file
-				msg = cmdIn.readUTF();
+				//receive size of file from server
+				msg = dataIn.readUTF();
 				byte[] buffer = new byte[Integer.parseInt(msg)];
-				cmdIn.read(buffer);
+        //read input and write file
+				dataIn.read(buffer);
 				fileOut.write(buffer);
+        System.out.println("The size of: " + cmd[1] + " is "+ Integer.parseInt(msg)+"bytes");
+        System.out.println("File:"+cmd[1]+" is done transferring to client("+cltip+")");
 			} catch (NumberFormatException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -103,22 +140,26 @@ public class clt {
 	}
 
 	public static void SEND() throws IOException {
-
+    System.out.println("------------------------------------------------------");
+    System.out.println("-                 CLIENT HAS CALLED SEND                     -");
+    System.out.println("------------------------------------------------------");
+		dataOut = new DataOutputStream(ClientSocket.getOutputStream());
 		File myFile = new File(cmd[1]);
-		System.out.println("does file exist?" + myFile.exists());
 		// if file exists send file to server
 		if (myFile.exists() == true) {
 			try {
 				cmdOut.writeUTF("1");
-				System.out.println("File name:" + cmd[1]);
+				System.out.println("File:" + cmd[1]+"exists and is being transferred to the server("+ server+")");
+        //put file into stream
 				fileIn = new FileInputStream(cmd[1]);
 				int size = (int) myFile.length();
-				System.out.println("FILE SIZE IN BYTES" + size);
 				byte[] buffer = new byte[size];
 				cmdOut.writeUTF(Integer.toString(size));
-				System.out.println("sending size of file to server");
+				System.out.println("The size of: " + cmd[1] + " is "+ size+"bytes");
+        //read file and send to server
 				fileIn.read(buffer);
 				dataOut.write(buffer);
+        System.out.println("File: " + cmd[1] + " has sucessfully sent to the server(" + server+")");
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -126,33 +167,60 @@ public class clt {
 		} else {
 			// if file doesn't exist let server know and print line
 			cmdOut.writeUTF("0");
-			System.out.println("File Does Not Exist");
+			System.out.println("File:" +cmd[1]+ " does not exist");
 		}
-
 	}
 
 	public static void command() {
+    System.out.println("------------------------------------------------------");
 		System.out.println("get <filename.extension> - Retreive a file from the server");
 		System.out.println("send <filename.extension> - Send a file to the server");
 		System.out.println("exit - close the connection");
-		System.out.println("Please enter a command: ");
+    System.out.println("------------------------------------------------------");
+		System.out.print("Please enter a command: ");
 	}
 
 	public static void parseFileName() {
 		cmd = msg.trim().split(" ");
 	}
 
-	public static void disconnect() throws IOException {
-		System.out.println("Disconnecting");
-		client.close();
-		ListeningSocket.close();
-		ClientSocket.close();
-		cmdIn.close();
-		cmdOut.close();
-		dataOut.close();
-		input.close();
-		fileOut.close();
-		fileIn.close();
-
+	/*-----------------------------------------------------------
+	|
+	|    FUNCTION:    disconnect()
+	|
+	|                mqd_t &mqd            -    specify the message queue
+	|                struct Mesg &msg    -    struct to read into
+	|                unsigned int &prio     -    priority read
+	|
+	|
+	|    DESIGNER:        Alex Zielinski
+	|    PROGRAMMER:        Alex Zielinski
+	|
+	|    DATE:            Feb 13, 2017
+	|
+	|    DESCRIPTION:
+	|                This function is a wrapper function to read from
+	|                the message queue. It reads from a message queue
+	|                and stores data to the struct passed in as an arg
+	|
+	|    RETURNS:
+	|                -1 if the CMD ARG is not valid
+	|                otherwise returns the value returned by mq_receive
+	|
+	|------------------------------------------------------------*/
+	public static void disconnect(int t) throws IOException {
+		System.out.println("Closing connection");
+    //disconnect to streams and sockets
+    if(t == 1){
+      client.close();
+      cmdOut.close();
+      input.close();
+    } else {
+      ListeningSocket.close();
+      ClientSocket.close();
+      client.close();
+      cmdOut.close();
+      input.close();
+    }
 	}
 }
