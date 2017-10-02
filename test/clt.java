@@ -53,8 +53,6 @@ public class clt {
 		cmdSocketStart(server, svrport);
 		cmdOut = new DataOutputStream(client.getOutputStream());
 
-		//send IP of client to server in the command socket
-		//cmdOut.writeUTF(cltip);
 		// Read commands from client
 		input = new BufferedReader(new InputStreamReader(System.in));
 		command();
@@ -66,27 +64,27 @@ public class clt {
 
 		// if command is not exit
     if (!msg.toLowerCase().contains("exit")){
-      System.out.println("hi");
       //start data transfer socket
       dataSocketStart(dataport);
       //while command is not exit
-      while (msg.toLowerCase().contains("exit") != true) {
-        if (msg.toLowerCase().contains("get")) {
-          GET();
-
-        } else if (msg.toLowerCase().contains("send")) {
-          SEND();
+        while (msg.toLowerCase().contains("exit") != true) {
+          if (cmd[0].toLowerCase().contains("get") == false && cmd[0].toLowerCase().contains("send") == false){
+            System.out.println("Invalid command");
+          } else if(cmd[0].toLowerCase().contains("get")){
+            GET();
+          } else if (cmd[0].toLowerCase().contains("send")) {
+            SEND();
+          }
+          //output commands
+          command();
+          msg = input.readLine();
+          //send user input to server and parse input for next command
+          cmdOut.writeUTF(msg);
+          parseFileName();
         }
-        //output commands
-        command();
-        msg = input.readLine();
-        //send user input to server and parse input for next command
-        cmdOut.writeUTF(msg);
-        parseFileName();
-      }
-      //diconnect to client
-       disconnect(0);
-    } else {
+        //diconnect to client
+         disconnect(0);
+      } else {
       disconnect(1);
     }
 }
@@ -106,6 +104,7 @@ public class clt {
     //accepts connection from socket
 		ClientSocket = ListeningSocket.accept();
     System.out.println("Client is connected on port "+ port);
+    System.out.println("------------------------------------------------------");
 	}
 
 	public static void GET() throws IOException {

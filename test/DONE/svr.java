@@ -26,31 +26,29 @@ public static void main(String args[]) throws IOException, ClassNotFoundExceptio
   cmdSocketStart(cltport);
   // get the host name for the data socket
   cmdIn = new DataInputStream(clientSocket.getInputStream());
-
-  //hostName = cmdIn.readUTF();
-  //System.out.println("server name: " + hostName);
-
   // store message from client
   msg = cmdIn.readUTF();
-  System.out.println("message from client:" + msg);
-  cmd = msg.trim().split(" ");
+  parseFileName();
+
   if (!msg.toLowerCase().contains("exit")){
-    dataSocketStart(hostName, dataport);
-    while (msg.toLowerCase().contains("exit") != true) {
-      if (msg.toLowerCase().contains("get")) {
-        System.out.println("GET FUNCTION CALLED");
-        GET();
-        // msg = null;
-      } else if (msg.toLowerCase().contains("send")) {
-        System.out.println("SEND FUNCTION CALLED");
-        SEND();
-        // msg = null;
+    //start data transfer socket
+    dataSocketStart(hostName,dataport);
+    //while command is not exit
+      while (msg.toLowerCase().contains("exit") != true) {
+        if (cmd[0].toLowerCase().contains("get") == false && cmd[0].toLowerCase().contains("send") == false){
+          System.out.println("Invalid command");
+        } else if(cmd[0].toLowerCase().contains("get")){
+          GET();
+        } else if (cmd[0].toLowerCase().contains("send")) {
+          SEND();
+        }
+        //read message from client and parse
+        msg = cmdIn.readUTF();
+        parseFileName();
       }
-      msg = cmdIn.readUTF();
-      parseFileName();
-    }
-    disconnect(0);
-  } else {
+      //diconnect to client
+       disconnect(0);
+    } else {
     disconnect(1);
   }
 }
@@ -72,7 +70,7 @@ public static void dataSocketStart(String host, int port) throws IOException {
 
 public static void GET() throws IOException {
   System.out.println("------------------------------------------------------");
-  System.out.println("-                    CLIENT CALLED GET FUNCTION                    -");
+  System.out.println("-              CLIENT CALLED GET FUNCTION            -");
   System.out.println("------------------------------------------------------");
   dataOut = new DataOutputStream(client.getOutputStream());
   File myFile = new File(cmd[1]);
@@ -98,7 +96,7 @@ public static void GET() throws IOException {
 
 public static void SEND() throws IOException {
   System.out.println("------------------------------------------------------");
-  System.out.println("-                   CLIENT CALLED SEND FUNCTION                    -");
+  System.out.println("-              CLIENT CALLED SEND FUNCTIon           -");
   System.out.println("------------------------------------------------------");
   dataIn = new DataInputStream(client.getInputStream());
   msg = cmdIn.readUTF();
