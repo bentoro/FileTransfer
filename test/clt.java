@@ -110,7 +110,7 @@ public class clt {
 
 	public static void GET() throws IOException {
     System.out.println("------------------------------------------------------");
-    System.out.println("-                 CLIENT HAS CALLED GET                     -");
+    System.out.println("-                  GET FUNCTION                      -");
     System.out.println("------------------------------------------------------");
 		dataIn = new DataInputStream(ClientSocket.getInputStream());
 
@@ -141,7 +141,7 @@ public class clt {
 
 	public static void SEND() throws IOException {
     System.out.println("------------------------------------------------------");
-    System.out.println("-                 CLIENT HAS CALLED SEND                     -");
+    System.out.println("-                 SEND FUNCTION                      -");
     System.out.println("------------------------------------------------------");
 		dataOut = new DataOutputStream(ClientSocket.getOutputStream());
 		File myFile = new File(cmd[1]);
@@ -209,6 +209,7 @@ public class clt {
 	|
 	|------------------------------------------------------------*/
 	public static void disconnect(int t) throws IOException {
+
 		System.out.println("Closing connection");
     //disconnect to streams and sockets
     if(t == 1){

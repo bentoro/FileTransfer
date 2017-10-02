@@ -72,7 +72,7 @@ public static void dataSocketStart(String host, int port) throws IOException {
 
 public static void GET() throws IOException {
   System.out.println("------------------------------------------------------");
-  System.out.println("-                    GET FUNCTION                    -");
+  System.out.println("-                    CLIENT CALLED GET FUNCTION                    -");
   System.out.println("------------------------------------------------------");
   dataOut = new DataOutputStream(client.getOutputStream());
   File myFile = new File(cmd[1]);
@@ -98,7 +98,7 @@ public static void GET() throws IOException {
 
 public static void SEND() throws IOException {
   System.out.println("------------------------------------------------------");
-  System.out.println("-                   SEND FUNCTION                    -");
+  System.out.println("-                   CLIENT CALLED SEND FUNCTION                    -");
   System.out.println("------------------------------------------------------");
   dataIn = new DataInputStream(client.getInputStream());
   msg = cmdIn.readUTF();
