@@ -51,6 +51,8 @@ public class clt {
 
     //connect to command socket
 		cmdSocketStart(server, svrport);
+    dataSocketStart(dataport);
+
 		cmdOut = new DataOutputStream(client.getOutputStream());
 
 		// Read commands from client
@@ -63,16 +65,12 @@ public class clt {
 		cmdOut.writeUTF(msg);
 
 		// if command is not exit
-    if (!msg.toLowerCase().contains("exit")){
-      //start data transfer socket
-      dataSocketStart(dataport);
-      //while command is not exit
         while (msg.toLowerCase().contains("exit") != true) {
-          if (cmd[0].toLowerCase().contains("get") == false && cmd[0].toLowerCase().contains("send") == false){
+          if (cmd[0].equalsIgnoreCase("get") == false && cmd[0].equalsIgnoreCase("send") == false){
             System.out.println("Invalid command");
-          } else if(cmd[0].toLowerCase().contains("get")){
+          } else if(cmd[0].equalsIgnoreCase("get")){
             GET();
-          } else if (cmd[0].toLowerCase().contains("send")) {
+          } else if (cmd[0].equalsIgnoreCase("send")) {
             SEND();
           }
           //output commands
@@ -83,11 +81,8 @@ public class clt {
           parseFileName();
         }
         //diconnect to client
-         disconnect(0);
-      } else {
-      disconnect(1);
+         disconnect();
     }
-}
 
 	public static void cmdSocketStart(String host, int port) throws UnknownHostException, IOException {
     System.out.println("------------------------------------------------------");
@@ -120,7 +115,7 @@ public class clt {
 			System.out.println("File: "+cmd[1] +" Doesn't Exist");
 		} else {
 			try {
-				System.out.println("File:"+cmd[1] + " is transfering to Client(" + cltip +")");
+				System.out.println("File: "+cmd[1] + " is transfering to Client");
         //create new file in stream
 				fileOut = new FileOutputStream(cmd[1]);
 				//receive size of file from server
@@ -130,7 +125,7 @@ public class clt {
 				dataIn.read(buffer);
 				fileOut.write(buffer);
         System.out.println("The size of: " + cmd[1] + " is "+ Integer.parseInt(msg)+"bytes");
-        System.out.println("File:"+cmd[1]+" is done transferring to client("+cltip+")");
+        System.out.println("File: "+cmd[1]+" is done transferring to client");
 			} catch (NumberFormatException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -148,7 +143,7 @@ public class clt {
 		if (myFile.exists() == true) {
 			try {
 				cmdOut.writeUTF("1");
-				System.out.println("File:" + cmd[1]+"exists and is being transferred to the server("+ server+")");
+				System.out.println("File: " + cmd[1]+" exists and is being transferred to the server");
         //put file into stream
 				fileIn = new FileInputStream(cmd[1]);
 				int size = (int) myFile.length();
@@ -158,7 +153,7 @@ public class clt {
         //read file and send to server
 				fileIn.read(buffer);
 				dataOut.write(buffer);
-        System.out.println("File: " + cmd[1] + " has sucessfully sent to the server(" + server+")");
+        System.out.println("File: " + cmd[1] + " has sucessfully sent to the server");
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -166,7 +161,7 @@ public class clt {
 		} else {
 			// if file doesn't exist let server know and print line
 			cmdOut.writeUTF("0");
-			System.out.println("File:" +cmd[1]+ " does not exist");
+			System.out.println("File: " +cmd[1]+ " does not exist");
 		}
 	}
 
@@ -207,20 +202,17 @@ public class clt {
 	|                otherwise returns the value returned by mq_receive
 	|
 	|------------------------------------------------------------*/
-	public static void disconnect(int t) throws IOException {
-
+	public static void disconnect() throws IOException {
+    //close sockets and streams
 		System.out.println("Closing connection");
     //disconnect to streams and sockets
-    if(t == 1){
       client.close();
       cmdOut.close();
       input.close();
-    } else {
       ListeningSocket.close();
       ClientSocket.close();
       client.close();
       cmdOut.close();
       input.close();
-    }
 	}
 }

@@ -2,7 +2,7 @@ import java.io.*;
 import java.net.*;
 
 public class svr {
-  private static ServerSocket listeningSocket;
+private static ServerSocket listeningSocket;
 private static Socket clientSocket;
 private static Socket client;
 private static DataInputStream cmdIn;
@@ -24,22 +24,20 @@ public static void main(String args[]) throws IOException, ClassNotFoundExceptio
   hostName = args[1];
 
   cmdSocketStart(cltport);
+  dataSocketStart(hostName,dataport);
   // get the host name for the data socket
   cmdIn = new DataInputStream(clientSocket.getInputStream());
   // store message from client
   msg = cmdIn.readUTF();
   parseFileName();
 
-  if (!msg.toLowerCase().contains("exit")){
-    //start data transfer socket
-    dataSocketStart(hostName,dataport);
     //while command is not exit
       while (msg.toLowerCase().contains("exit") != true) {
-        if (cmd[0].toLowerCase().contains("get") == false && cmd[0].toLowerCase().contains("send") == false){
+        if (cmd[0].equalsIgnoreCase("get") == false && cmd[0].equalsIgnoreCase("send") == false){
           System.out.println("Invalid command");
-        } else if(cmd[0].toLowerCase().contains("get")){
+        } else if(cmd[0].equalsIgnoreCase("get")){
           GET();
-        } else if (cmd[0].toLowerCase().contains("send")) {
+        } else if (cmd[0].equalsIgnoreCase("send")) {
           SEND();
         }
         //read message from client and parse
@@ -47,11 +45,8 @@ public static void main(String args[]) throws IOException, ClassNotFoundExceptio
         parseFileName();
       }
       //diconnect to client
-       disconnect(0);
-    } else {
-    disconnect(1);
-  }
-}
+       disconnect();
+     }
 
 public static void cmdSocketStart(int port) throws UnknownHostException, IOException {
   System.out.println("------------------------------------------------------");
@@ -71,7 +66,7 @@ public static void dataSocketStart(String host, int port) throws IOException {
 public static void GET() throws IOException {
   System.out.println("------------------------------------------------------");
   System.out.println("-              CLIENT CALLED GET FUNCTION            -");
-  System.out.println("------------------------------------------------------");
+  System.out.println("======================================================");
   dataOut = new DataOutputStream(client.getOutputStream());
   File myFile = new File(cmd[1]);
   boolean exists = myFile.exists();
@@ -79,7 +74,7 @@ public static void GET() throws IOException {
     dataOut.writeUTF("1");
     System.out.println("File: "+cmd[1]+" exists and is sending to client");
     int size = (int) myFile.length();
-    System.out.println("File name:" + cmd[1]+" is of size " + size+ "bytes");
+    System.out.println("File name: " + cmd[1]+" is of size " + size+ "bytes");
     fileIn = new FileInputStream(cmd[1]);
     byte[] buffer = new byte[size];
     // send size of file to server
@@ -92,12 +87,13 @@ public static void GET() throws IOException {
     dataOut.writeUTF("0");
     System.out.println("File Doesn't Exist");
   }
+  System.out.println("======================================================");
 }
 
 public static void SEND() throws IOException {
   System.out.println("------------------------------------------------------");
-  System.out.println("-              CLIENT CALLED SEND FUNCTIon           -");
-  System.out.println("------------------------------------------------------");
+  System.out.println("-              CLIENT CALLED SEND FUNCTION           -");
+  System.out.println("======================================================");
   dataIn = new DataInputStream(client.getInputStream());
   msg = cmdIn.readUTF();
   if (msg.matches("1")) {
@@ -108,26 +104,25 @@ public static void SEND() throws IOException {
       System.out.println("Receiving file from client of size: " + Integer.parseInt(msg)+"bytes");
       dataIn.read(buffer);
       fileOut.write(buffer);
-      System.out.println("File sucessfully received from client!");
+      System.out.println("File:" + cmd[1]+" sucessfully received from client!");
     } catch (Exception e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
   } else {
   }
+  System.out.println("======================================================");
 }
 public static void parseFileName() {
   cmd = msg.trim().split(" ");
 }
 
-public static void disconnect(int t) throws IOException {
+public static void disconnect() throws IOException {
+  //close sockets and streams
   System.out.println("Closing connection");
-  if (t == 1){
     listeningSocket.close();
     clientSocket.close();
     cmdIn.close();
-  } else {
     client.close();
   }
-}
 }
