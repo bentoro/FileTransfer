@@ -1,5 +1,5 @@
 /*-------------------------------------------------------------
-|    SOURCE FILE:     client.java
+|    SOURCE FILE:     svr.java
 |
 |    DATE:             Oct 1, 2017
 |
@@ -8,15 +8,10 @@
 |    PROGRAMMER:        Benedict Lo
 |
 |    NOTES:
-|        This program acts as a client in a client - server
-|        relationship. This client connects to 2 message queues.
-|        Once connected then it will prompt the user for a
-|        file path. The client will send the file path request
-|        to the server. If the file doesn't exist the server
-|        will echo that back. If the file does exist then the
-|        server will send the contents of the file through
-|        a message queue in which then the client will read
-|        the mesasge queue and will echo the contents to screen
+|        This program acts as a server in a File Transfer.
+|        This program connects to the server with the commands socket ,
+|        and creates a listening socket for the data socket.
+|
 |
 --------------------------------------------------------------*/
 
@@ -39,10 +34,28 @@ public class clt {
   private static int svrport;
   private static int dataport;
   private static String cltip;
-
+  /*-----------------------------------------------------------
+  |
+  |    FUNCTION:    main(String args[] )
+  \
+  |    DESIGNER:        Benedict Lo
+  |    PROGRAMMER:        Benedict Lo
+  |
+  |    DATE:            Oct. 2, 2017
+  |
+  |    DESCRIPTION:
+  |                This is the main entry to the program and connects
+  |                to the command socket and data socket. Gets user input and
+  |                starts user input loop.
+  |
+  |
+  |    RETURNS: VOID
+  |
+  |
+  |------------------------------------------------------------*/
 	public static void main(String args[]) throws UnknownHostException, IOException {
 		if (args.length != 3) {
-			System.out.println("Error : java client <host> <port> <data socekt port>");
+			System.out.println("Error : java client <host> <port> <data socket port>");
 			System.exit(0);
 		}
 		server = args[0];
@@ -83,14 +96,47 @@ public class clt {
         //diconnect to client
          disconnect();
     }
-
+/*-----------------------------------------------------------
+|
+|    FUNCTION:    cmdSocketStart()
+\
+|    DESIGNER:        Benedict Lo
+|    PROGRAMMER:        Benedict Lo
+|
+|    DATE:            Oct. 2, 2017
+|
+|    DESCRIPTION:
+|                This method creates a socket to connect for commands and connects to
+|                the server.
+|
+|    RETURNS: VOID
+|
+|
+|------------------------------------------------------------*/
 	public static void cmdSocketStart(String host, int port) throws UnknownHostException, IOException {
     System.out.println("------------------------------------------------------");
 		// creates a socket connecting to the server
 		client = new Socket(host, port);
 		System.out.println("Connected to " + host + " on port " + port);
 	}
-
+  /*-----------------------------------------------------------
+  |
+  |    FUNCTION:    dataSocketStart()
+  \
+  |    DESIGNER:        Benedict Lo
+  |    PROGRAMMER:        Benedict Lo
+  |
+  |    DATE:            Oct. 2, 2017
+  |
+  |    DESCRIPTION:
+  |                This method creates a listening socket for data and accepts
+  |                connections from the server.
+  |
+  |
+  |    RETURNS: VOID
+  |
+  |
+  |------------------------------------------------------------*/
 	public static void dataSocketStart(int port) throws IOException {
     System.out.println("------------------------------------------------------");
 		//creating listening socket
@@ -101,13 +147,30 @@ public class clt {
     System.out.println("Client is connected on port "+ port);
     System.out.println("------------------------------------------------------");
 	}
-
+  /*-----------------------------------------------------------
+  |
+  |    FUNCTION:    GET()
+  \
+  |    DESIGNER:        Benedict Lo
+  |    PROGRAMMER:        Benedict Lo
+  |
+  |    DATE:            Oct. 2, 2017
+  |
+  |    DESCRIPTION:
+  |                This method reads from the server to see if the file
+  |                exists. If the file exists the method reads the size of the |                file from the server. Reads the buffer from the server and
+  |                writes the buffer to the client.
+  |
+  |
+  |    RETURNS: VOID
+  |
+  |
+  |------------------------------------------------------------*/
 	public static void GET() throws IOException {
     System.out.println("------------------------------------------------------");
     System.out.println("-                  GET FUNCTION                      -");
     System.out.println("------------------------------------------------------");
 		dataIn = new DataInputStream(ClientSocket.getInputStream());
-
 		//store message from server
 		msg = dataIn.readUTF();
     //if the file exists
@@ -120,19 +183,42 @@ public class clt {
 				fileOut = new FileOutputStream(cmd[1]);
 				//receive size of file from server
 				msg = dataIn.readUTF();
-				byte[] buffer = new byte[Integer.parseInt(msg)];
-        //read input and write file
-				dataIn.read(buffer);
-				fileOut.write(buffer);
+        int size = Integer.parseInt(msg);
+				byte[] buffer = new byte[size];
+        int read=0;
+        //stores the position
+        int left = size;
+        //while left (the position) is greater than zero
+        while((read = dataIn.read(buffer, 0, left)) > 0){
+          left-=read;
+          fileOut.write(buffer, 0, read);
+        }
         System.out.println("The size of: " + cmd[1] + " is "+ Integer.parseInt(msg)+"bytes");
         System.out.println("File: "+cmd[1]+" is done transferring to client");
 			} catch (NumberFormatException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 	}
-
+  /*-----------------------------------------------------------
+  |
+  |    FUNCTION:    SEND()
+  \
+  |    DESIGNER:        Benedict Lo
+  |    PROGRAMMER:        Benedict Lo
+  |
+  |    DATE:            Oct. 2, 2017
+  |
+  |    DESCRIPTION:
+  |                This method checks if a file locally exists if it exists
+  |                the method puts the file into a buffer and sends it to the
+  |                server.
+  |
+  |
+  |    RETURNS: VOID
+  |
+  |
+  |------------------------------------------------------------*/
 	public static void SEND() throws IOException {
     System.out.println("------------------------------------------------------");
     System.out.println("-                 SEND FUNCTION                      -");
@@ -144,18 +230,19 @@ public class clt {
 			try {
 				cmdOut.writeUTF("1");
 				System.out.println("File: " + cmd[1]+" exists and is being transferred to the server");
-        //put file into stream
+        //create file
 				fileIn = new FileInputStream(cmd[1]);
 				int size = (int) myFile.length();
 				byte[] buffer = new byte[size];
+        //send the size of the file to the server
 				cmdOut.writeUTF(Integer.toString(size));
 				System.out.println("The size of: " + cmd[1] + " is "+ size+"bytes");
-        //read file and send to server
-				fileIn.read(buffer);
-				dataOut.write(buffer);
+        //while buffer is greater than zero write file to buffer
+        while (fileIn.read(buffer)>0){
+          dataOut.write(buffer);
+        }
         System.out.println("File: " + cmd[1] + " has sucessfully sent to the server");
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		} else {
@@ -164,7 +251,23 @@ public class clt {
 			System.out.println("File: " +cmd[1]+ " does not exist");
 		}
 	}
-
+  /*-----------------------------------------------------------
+  |
+  |    FUNCTION:    command()
+  \
+  |    DESIGNER:        Benedict Lo
+  |    PROGRAMMER:        Benedict Lo
+  |
+  |    DATE:            Oct. 2, 2017
+  |
+  |    DESCRIPTION:
+  |                This methods prints the commands of the program.
+  |
+  |
+  |    RETURNS: VOID
+  |
+  |
+  |------------------------------------------------------------*/
 	public static void command() {
     System.out.println("------------------------------------------------------");
 		System.out.println("get <filename.extension> - Retreive a file from the server");
@@ -173,35 +276,48 @@ public class clt {
     System.out.println("------------------------------------------------------");
 		System.out.print("Please enter a command: ");
 	}
-
+  /*-----------------------------------------------------------
+  |
+  |    FUNCTION:    parseFileName()
+  \
+  |    DESIGNER:        Benedict Lo
+  |    PROGRAMMER:        Benedict Lo
+  |
+  |    DATE:            Oct. 2, 2017
+  |
+  |    DESCRIPTION:
+  |                This method reads the input of the user and parses it
+  |                splitting the command and the filename and storing it into
+  |                a string array. The command is the first word and the second
+  |                word is the filename.
+  |
+  |
+  |    RETURNS: VOID
+  |
+  |
+  |------------------------------------------------------------*/
 	public static void parseFileName() {
+    //parses the command and the filename by space
 		cmd = msg.trim().split(" ");
 	}
 
-	/*-----------------------------------------------------------
-	|
-	|    FUNCTION:    disconnect()
-	|
-	|                mqd_t &mqd            -    specify the message queue
-	|                struct Mesg &msg    -    struct to read into
-	|                unsigned int &prio     -    priority read
-	|
-	|
-	|    DESIGNER:        Alex Zielinski
-	|    PROGRAMMER:        Alex Zielinski
-	|
-	|    DATE:            Feb 13, 2017
-	|
-	|    DESCRIPTION:
-	|                This function is a wrapper function to read from
-	|                the message queue. It reads from a message queue
-	|                and stores data to the struct passed in as an arg
-	|
-	|    RETURNS:
-	|                -1 if the CMD ARG is not valid
-	|                otherwise returns the value returned by mq_receive
-	|
-	|------------------------------------------------------------*/
+  /*-----------------------------------------------------------
+  |
+  |    FUNCTION:    disconnect()
+  \
+  |    DESIGNER:        Benedict Lo
+  |    PROGRAMMER:        Benedict Lo
+  |
+  |    DATE:            Oct. 2, 2017
+  |
+  |    DESCRIPTION:
+  |                This method disconnects all the opened sockets
+  |                and streams when exiting the client.
+  |
+  |    RETURNS: VOID
+  |
+  |
+  |------------------------------------------------------------*/
 	public static void disconnect() throws IOException {
     //close sockets and streams
 		System.out.println("Closing connection");
