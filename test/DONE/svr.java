@@ -228,7 +228,7 @@ public static void SEND() throws IOException {
       int read=0;
       // stores the position
       int left = size;
-      //while left (the position) is greater than zero
+      //while no more bytes left to read
       while((read = dataIn.read(buffer, 0, left)) > 0){
         left-=read;
         fileOut.write(buffer, 0, read);
